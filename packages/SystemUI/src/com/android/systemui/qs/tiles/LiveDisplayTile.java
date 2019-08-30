@@ -210,8 +210,7 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
             // if it's the same as the off setting, and skip night display
             // on HWC2
             if ((!mOutdoorModeAvailable && nextMode == MODE_OUTDOOR) ||
-                    (mDayTemperature == OFF_TEMPERATURE && nextMode == MODE_DAY) ||
-                    (mNightDisplayAvailable && (nextMode == MODE_DAY || nextMode == MODE_NIGHT))) {
+                    (mDayTemperature == OFF_TEMPERATURE && nextMode == MODE_DAY){
                 next++;
                 if (next >= mValues.length) {
                     next = 0;
