@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2015 The CyanogenMod Project
- * Copyright (C) 2018-2019 The LineageOS Project
+ * Copyright (C) 2018 The LineageOS Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import android.os.Handler;
 import android.os.UserHandle;
 import android.service.quicksettings.Tile;
 
-import com.android.internal.app.ColorDisplayController;
 import com.android.internal.util.ArrayUtils;
 import com.android.systemui.plugins.qs.QSTile.LiveDisplayState;
 import com.android.systemui.qs.QSHost;
