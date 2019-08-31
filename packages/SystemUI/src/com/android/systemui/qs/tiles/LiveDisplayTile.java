@@ -64,7 +64,7 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
 
     private int mDayTemperature = -1;
 
-    private final boolean mNightDisplayAvailable;
+   // private final boolean mNightDisplayAvailable;
     private boolean mOutdoorModeAvailable;
     private boolean mReceiverRegistered;
 
@@ -74,7 +74,7 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
 
     public LiveDisplayTile(QSHost host) {
         super(host);
-        mNightDisplayAvailable = ColorDisplayController.isAvailable(mContext);
+       // mNightDisplayAvailable = ColorDisplayController.isAvailable(mContext);
 
         Resources res = mContext.getResources();
         TypedArray typedArray = res.obtainTypedArray(R.array.live_display_drawables);
@@ -159,8 +159,8 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
         state.secondaryLabel = mEntries[state.mode];
         state.icon = ResourceIcon.get(mEntryIconRes[state.mode]);
         state.contentDescription = mDescriptionEntries[state.mode];
-        state.state = (mNightDisplayAvailable && !mOutdoorModeAvailable) ? Tile.STATE_UNAVAILABLE:
-                mLiveDisplay.getMode() != MODE_OFF ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
+      //  state.state = (mNightDisplayAvailable && !mOutdoorModeAvailable) ? Tile.STATE_UNAVAILABLE:
+       //         mLiveDisplay.getMode() != MODE_OFF ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
     }
 
     @Override
@@ -209,7 +209,7 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
             // if it's the same as the off setting, and skip night display
             // on HWC2
             if ((!mOutdoorModeAvailable && nextMode == MODE_OUTDOOR) ||
-                    (mDayTemperature == OFF_TEMPERATURE && nextMode == MODE_DAY){
+                    (mDayTemperature == OFF_TEMPERATURE && nextMode == MODE_DAY)){
                 next++;
                 if (next >= mValues.length) {
                     next = 0;
