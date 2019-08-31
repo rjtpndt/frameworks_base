@@ -178,10 +178,8 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
 
         while (true) {
             nextMode = Integer.valueOf(mValues[next]);
-            // Skip outdoor mode if it's unsupported, and skip the day setting
-            // if it's the same as the off setting
-            if ((!mOutdoorModeAvailable && nextMode == MODE_OUTDOOR) ||
-                    (mDayTemperature == OFF_TEMPERATURE && nextMode == MODE_DAY)) {
+            // Skip outdoor mode if it's unsupported
+            if (!mOutdoorModeAvailable && nextMode == MODE_OUTDOOR) {
                 next++;
                 if (next >= mValues.length) {
                     next = 0;
