@@ -671,6 +671,10 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
 
     // Dark theme style
     private boolean mUseBlackTheme;
+    private int mNotificationTheme;
+    private int NOTIFICATION_THEME_DEFAULT = 0;
+    private int NOTIFICATION_THEME_DARK = 1;
+    private ActivityManager mActivityManager;
 
     @Override
     public void start() {
@@ -742,6 +746,8 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         mLockPatternUtils = new LockPatternUtils(mContext);
 
         mMediaManager.setUpWithPresenter(this, mEntryManager);
+
+        mActivityManager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
 
         // Connect in to the status bar manager service
         mCommandQueue = getComponent(CommandQueue.class);
@@ -1362,6 +1368,12 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
         if (mBrightnessMirrorController != null) {
             mBrightnessMirrorController.onOverlayChanged();
         }
+        mGutsManager.onOverlayChanged();
+        mStackScroller.onOverlayChanged();
+        mNotificationShelf.onOverlayChanged();
+        mNotificationPanel.onOverlayChanged();
+        Dependency.get(DarkIconDispatcher.class).onOverlayChanged(mContext);
+        reevaluateStyles();
     }
 
     private void inflateEmptyShadeView() {
@@ -4168,10 +4180,14 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                 try {
                     mOverlayManager.setEnabled("com.android.system.theme.dark",
                             useDarkTheme && !mUseBlackTheme, mLockscreenUserManager.getCurrentUserId());
+                    mOverlayManager.setEnabled("com.android.system.theme.notifications.dark",
+                            useDarkTheme && !mUseBlackTheme && mNotificationTheme == NOTIFICATION_THEME_DARK, mLockscreenUserManager.getCurrentUserId());
                     mOverlayManager.setEnabled("com.android.systemui.custom.theme.dark",
                             useDarkTheme && !mUseBlackTheme, mLockscreenUserManager.getCurrentUserId());
                     mOverlayManager.setEnabled("com.android.system.theme.black",
                             useDarkTheme && mUseBlackTheme, mLockscreenUserManager.getCurrentUserId());
+                    mOverlayManager.setEnabled("com.android.system.theme.notifications.black",
+                            useDarkTheme && mUseBlackTheme && mNotificationTheme == NOTIFICATION_THEME_DARK, mLockscreenUserManager.getCurrentUserId());
                     mOverlayManager.setEnabled("com.android.systemui.custom.theme.black",
                             useDarkTheme && mUseBlackTheme, mLockscreenUserManager.getCurrentUserId());
                     mOverlayManager.setEnabled("com.android.settings.theme.dark",
@@ -4195,6 +4211,7 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                     umm.setNightMode(useDarkTheme ?
                         UiModeManager.MODE_NIGHT_YES : UiModeManager.MODE_NIGHT_NO);
                 }
+                forceStopSettingsIfNeeded();
             });
             mUiOffloadThread.submit(() -> {
                 swapWhiteBlackAccent();
@@ -4228,7 +4245,27 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
             mStatusBarWindowManager.setKeyguardDark(useDarkText);
         }
     }
-    
+
+    private void forceStopSettingsIfNeeded(){
+        List<ActivityManager.RunningTaskInfo> taskInfo = mActivityManager.getRunningTasks(1);
+        ActivityManager.RunningTaskInfo foregroundApp = null;
+        if (taskInfo != null && !taskInfo.isEmpty()) {
+            foregroundApp = taskInfo.get(0);
+        }
+        if (foregroundApp == null ||
+                !foregroundApp.baseActivity.getPackageName().equals("com.android.settings")){
+            try{
+                mActivityManager.forceStopPackage("com.android.settings");
+            }catch(Exception ignored){
+            }
+        }
+    }
+
+    private void updateNotificationTheme(){
+        mNotificationTheme = Settings.System.getIntForUser(mContext.getContentResolver(),
+                    Settings.System.NOTIFICATION_THEME, NOTIFICATION_THEME_DEFAULT, UserHandle.USER_CURRENT);
+    }
+
     private void updateDarkThemeStyle(){
         boolean useBlackByDefault = mContext.getResources().getBoolean(
                     com.android.internal.R.bool.config_hasOledDisplay);
@@ -5409,6 +5446,21 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.NAV_BAR_INVERSE),
                     false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_ROWS_PORTRAIT),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_ROWS_LANDSCAPE),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_COLUMNS_PORTRAIT),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.QS_COLUMNS_LANDSCAPE),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.NOTIFICATION_THEME),
+                    false, this, UserHandle.USER_ALL);
         }
 
         @Override
@@ -5424,13 +5476,29 @@ public class StatusBar extends SystemUI implements DemoMode, TunerService.Tunabl
                 updateCutoutOverlay();
             }else if (uri.equals(Settings.System.getUriFor(Settings.System.NAV_BAR_INVERSE))) {
                 reloadNavigationBar();
+            } else if (uri.equals(Settings.System.getUriFor(Settings.System.QS_ROWS_PORTRAIT)) ||
+                uri.equals(Settings.System.getUriFor(Settings.System.QS_ROWS_LANDSCAPE)) ||
+                uri.equals(Settings.System.getUriFor(Settings.System.QS_COLUMNS_PORTRAIT)) ||
+                uri.equals(Settings.System.getUriFor(Settings.System.QS_COLUMNS_LANDSCAPE))) {
+                setQsRowsColumns();
+            }else if (uri.equals(Settings.System.getUriFor(Settings.System.NOTIFICATION_THEME))) {
+                updateNotificationTheme();
+                updateTheme(true);
             }
         }
 
         public void update() {
             updateNavigationBar(false, false);
+            updateNotificationTheme();
             updateDarkThemeStyle();
             updateCutoutOverlay();
+            setQsRowsColumns();
+        }
+    }
+
+    private void setQsRowsColumns() {
+        if (mQSPanel != null) {
+            mQSPanel.updateResources();
         }
     }
 

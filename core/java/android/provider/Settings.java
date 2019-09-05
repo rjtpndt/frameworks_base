@@ -4812,6 +4812,89 @@ public final class Settings {
                 new SettingsValidators.InclusiveIntegerRangeValidator(-3, 1);
 
         /**
+         * Face auto unlock
+         * @hide
+         */
+        public static final String FACE_AUTO_UNLOCK = "face_auto_unlock";
+
+         /** @hide */
+        public static final Validator FACE_AUTO_UNLOCK_VALIDATOR =
+                BOOLEAN_VALIDATOR;
+
+        /**
+         * Start time of automatic system theme
+         *
+         * @hide
+         */
+        public static final String THEME_MODE_AUTOMATIC_START_TIME = "theme_mode_automatic_start_time";
+
+        /** @hide */
+        private static final Validator THEME_MODE_AUTOMATIC_START_TIME_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+         * End time of automatic system theme
+         *
+         * @hide
+         */
+        public static final String THEME_MODE_AUTOMATIC_END_TIME = "theme_mode_automatic_end_time";
+
+        /** @hide */
+        private static final Validator THEME_MODE_AUTOMATIC_END_TIME_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+         * How many rows to show in the qs panel when in portrait
+         * @hide
+         */
+        public static final String QS_ROWS_PORTRAIT = "qs_rows_portrait";
+
+        /** @hide */
+        private static final Validator QS_ROWS_PORTRAIT_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+         * How many rows to show in the qs panel when in landscape
+         * @hide
+         */
+        public static final String QS_ROWS_LANDSCAPE = "qs_rows_landscape";
+
+        /** @hide */
+        private static final Validator QS_ROWS_LANDSCAPE_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+         * How many columns to show in the qs panel when in portrait
+         * @hide
+         */
+        public static final String QS_COLUMNS_PORTRAIT = "qs_columns_portrait";
+
+        /** @hide */
+        private static final Validator QS_COLUMNS_PORTRAIT_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+         * How many columns to show in the qs panel when in landscape
+         * @hide
+         */
+        public static final String QS_COLUMNS_LANDSCAPE = "qs_columns_landscape";
+
+        /** @hide */
+        private static final Validator QS_COLUMNS_LANDSCAPE_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
+         * Notification style
+         *
+         * @hide
+         */
+        public static final String NOTIFICATION_THEME = "notification_theme";
+
+        /** @hide */
+        private static final Validator NOTIFICATION_THEME_VALIDATOR =
+                NON_NEGATIVE_INTEGER_VALIDATOR;
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
@@ -5053,6 +5136,14 @@ public final class Settings {
             PRIVATE_SETTINGS.add(DISPLAY_COLOR_ADJUSTMENT);
             PRIVATE_SETTINGS.add(DISPLAY_PICTURE_ADJUSTMENT);
             PRIVATE_SETTINGS.add(LIVE_DISPLAY_HINTED);
+            PRIVATE_SETTINGS.add(FACE_AUTO_UNLOCK);
+            PRIVATE_SETTINGS.add(THEME_MODE_AUTOMATIC_START_TIME);
+            PRIVATE_SETTINGS.add(THEME_MODE_AUTOMATIC_END_TIME);
+            PRIVATE_SETTINGS.add(QS_ROWS_PORTRAIT);
+            PRIVATE_SETTINGS.add(QS_ROWS_LANDSCAPE);
+            PRIVATE_SETTINGS.add(QS_COLUMNS_PORTRAIT);
+            PRIVATE_SETTINGS.add(QS_COLUMNS_LANDSCAPE);
+            PRIVATE_SETTINGS.add(NOTIFICATION_THEME);
         }
 
         /**
@@ -5207,6 +5298,14 @@ public final class Settings {
             VALIDATORS.put(DISPLAY_COLOR_ADJUSTMENT, DISPLAY_COLOR_ADJUSTMENT_VALIDATOR);
             VALIDATORS.put(DISPLAY_PICTURE_ADJUSTMENT, DISPLAY_PICTURE_ADJUSTMENT_VALIDATOR);
             VALIDATORS.put(LIVE_DISPLAY_HINTED, LIVE_DISPLAY_HINTED_VALIDATOR);
+            VALIDATORS.put(FACE_AUTO_UNLOCK, FACE_AUTO_UNLOCK_VALIDATOR);
+            VALIDATORS.put(THEME_MODE_AUTOMATIC_START_TIME, THEME_MODE_AUTOMATIC_START_TIME_VALIDATOR);
+            VALIDATORS.put(THEME_MODE_AUTOMATIC_END_TIME, THEME_MODE_AUTOMATIC_END_TIME_VALIDATOR);
+            VALIDATORS.put(QS_ROWS_PORTRAIT, QS_ROWS_PORTRAIT_VALIDATOR);
+            VALIDATORS.put(QS_ROWS_LANDSCAPE, QS_ROWS_LANDSCAPE_VALIDATOR);
+            VALIDATORS.put(QS_COLUMNS_PORTRAIT, QS_COLUMNS_PORTRAIT_VALIDATOR);
+            VALIDATORS.put(QS_COLUMNS_LANDSCAPE, QS_COLUMNS_LANDSCAPE_VALIDATOR);
+            VALIDATORS.put(NOTIFICATION_THEME, NOTIFICATION_THEME_VALIDATOR);
         }
 
         /**
@@ -7993,6 +8092,12 @@ public final class Settings {
          * @hide
          */
         public static final int THEME_MODE_DARK = 2;
+
+        /**
+         * THEME_MODE value for time mode.
+         * @hide
+         */
+        public static final int THEME_MODE_TIME = 3;
 
         /**
          * Whether screensavers are enabled.

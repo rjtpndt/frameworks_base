@@ -20,6 +20,7 @@ package com.android.systemui.qs.tiles;
 import static com.android.internal.custom.hardware.LiveDisplayManager.FEATURE_MANAGED_OUTDOOR_MODE;
 import static com.android.internal.custom.hardware.LiveDisplayManager.MODE_AUTO;
 import static com.android.internal.custom.hardware.LiveDisplayManager.MODE_DAY;
+import static com.android.internal.custom.hardware.LiveDisplayManager.MODE_NIGHT;
 import static com.android.internal.custom.hardware.LiveDisplayManager.MODE_OFF;
 import static com.android.internal.custom.hardware.LiveDisplayManager.MODE_OUTDOOR;
 
@@ -33,6 +34,7 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.service.quicksettings.Tile;
 
+import com.android.internal.app.ColorDisplayController;
 import com.android.internal.util.ArrayUtils;
 import com.android.systemui.plugins.qs.QSTile.LiveDisplayState;
 import com.android.systemui.qs.QSHost;
@@ -61,6 +63,7 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
 
     private int mDayTemperature;
 
+    // private final boolean mNightDisplayAvailable;
     private final boolean mOutdoorModeAvailable;
 
     private final LiveDisplayManager mLiveDisplay;
@@ -101,6 +104,12 @@ public class LiveDisplayTile extends QSTileImpl<LiveDisplayState> {
         mDescriptionEntries = res.getStringArray(R.array.live_display_description);
         mAnnouncementEntries = res.getStringArray(R.array.live_display_announcement);
         mValues = res.getStringArray(R.array.live_display_values);
+    }
+
+    @Override
+    public boolean isAvailable() {
+        // return !mNightDisplayAvailable || mOutdoorModeAvailable;
+	return true;
     }
 
     @Override
