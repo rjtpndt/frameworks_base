@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2017-2018 The LineageOS project
+ * Copyright (C) 2017-2019 The LineageOS project
  * Copyright (C) 2019 The PixelExperience project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,27 +46,12 @@ import android.widget.TextView;
 
 import android.provider.Settings;
 
-import com.android.systemui.Dependency;
-import com.android.systemui.R;
-import com.android.systemui.statusbar.StatusIconDisplayable;
-import com.android.systemui.statusbar.policy.DarkIconDispatcher;
-import com.android.systemui.statusbar.policy.DarkIconDispatcher.DarkReceiver;
-
-import static com.android.systemui.statusbar.StatusBarIconView.STATE_DOT;
-import static com.android.systemui.statusbar.StatusBarIconView.STATE_HIDDEN;
-import static com.android.systemui.statusbar.StatusBarIconView.STATE_ICON;
-
-import com.android.keyguard.KeyguardUpdateMonitor;
-import com.android.keyguard.KeyguardUpdateMonitorCallback;
-
 import com.android.internal.util.custom.cutout.CutoutUtils;
+import com.android.systemui.R;
 
 import java.util.HashMap;
 
-public class NetworkTraffic extends TextView implements StatusIconDisplayable {
-
-    public static final String SLOT = "networktraffic";
-
+public class NetworkTraffic extends TextView {
     private static final String TAG = "NetworkTraffic";
 
     private static final boolean DEBUG = false;
@@ -88,6 +73,7 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
     private static final long AUTOHIDE_THRESHOLD_MEGABYTES = 80;
 
     private boolean mEnabled;
+    private boolean mNetworkTrafficIsVisible;
     private long mTxKbps;
     private long mRxKbps;
     private long mLastTxBytes;
@@ -98,15 +84,11 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
     private long mAutoHideThreshold;
     private int mUnits;
     private boolean mShowUnits;
+    private int mDarkModeFillColor;
+    private int mLightModeFillColor;
     private int mIconTint = Color.WHITE;
-    private int mVisibleState = -1;
-    private boolean mTrafficVisible = false;
-    private boolean mSystemIconVisible = true;
-    private boolean mShouldShow = false;
     private SettingsObserver mObserver;
     private Drawable mDrawable;
-    private KeyguardUpdateMonitor mKeyguardUpdateMonitor;
-    private boolean mColorIsStatic = false;
 
     // Network tracking related variables
     final private ConnectivityManager mConnectivityManager;
@@ -138,8 +120,9 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
         final Resources resources = getResources();
         mTextSize = resources.getDimensionPixelSize(R.dimen.net_traffic_text_size);
 
-        mObserver = new SettingsObserver(mTrafficHandler);
+        mNetworkTrafficIsVisible = false;
 
+        mObserver = new SettingsObserver(mTrafficHandler);
         mConnectivityManager = getContext().getSystemService(ConnectivityManager.class);
         final NetworkRequest request = new NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -148,31 +131,43 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
         mConnectivityManager.registerNetworkCallback(request, mNetworkCallback);
     }
 
+    private CustomStatusBarItem.DarkReceiver mDarkReceiver =
+            new CustomStatusBarItem.DarkReceiver() {
+        public void onDarkChanged(Rect area, float darkIntensity, int tint) {
+            mIconTint = tint;
+            setTextColor(mIconTint);
+            updateTrafficDrawableColor();
+        }
+        public void setFillColors(int darkColor, int lightColor) {
+            mDarkModeFillColor = darkColor;
+            mLightModeFillColor = lightColor;
+        }
+    };
+
+    private CustomStatusBarItem.VisibilityReceiver mVisibilityReceiver =
+            new CustomStatusBarItem.VisibilityReceiver() {
+        public void onVisibilityChanged(boolean isVisible) {
+            if (mNetworkTrafficIsVisible != isVisible) {
+                mNetworkTrafficIsVisible = isVisible;
+                updateViewState();
+            }
+        }
+    };
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) mTextSize);
+
+        CustomStatusBarItem.Manager manager =
+                CustomStatusBarItem.findManager((View) this);
+        manager.addDarkReceiver(mDarkReceiver);
+        manager.addVisibilityReceiver(mVisibilityReceiver);
 
         mContext.registerReceiver(mIntentReceiver,
                 new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         mObserver.observe();
-        setTextSize(TypedValue.COMPLEX_UNIT_PX, (float) mTextSize);
-        mKeyguardUpdateMonitor = KeyguardUpdateMonitor.getInstance(mContext);
-        mKeyguardUpdateMonitor.registerCallback(mKeyguardMonitorCallback);
-        updateKeyguardVisibility(mKeyguardUpdateMonitor.isKeyguardVisible());
-        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(this);
         updateSettings();
-    }
-
-    private final KeyguardUpdateMonitorCallback mKeyguardMonitorCallback = new KeyguardUpdateMonitorCallback() {
-        @Override
-        public void onKeyguardVisibilityChanged(boolean showing) {
-            updateKeyguardVisibility(showing);
-        }
-    };
-
-    private void updateKeyguardVisibility(boolean showing) {
-        mShouldShow = !showing;
-        updateVisibility();
     }
 
     @Override
@@ -180,8 +175,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
         super.onDetachedFromWindow();
         mContext.unregisterReceiver(mIntentReceiver);
         mObserver.unobserve();
-        Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(this);
-        mKeyguardUpdateMonitor.removeCallback(mKeyguardMonitorCallback);
     }
 
     private Handler mTrafficHandler = new Handler() {
@@ -229,7 +222,7 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
 
             if (!enabled || shouldHide) {
                 setText("");
-                mTrafficVisible = false;
+                setVisibility(GONE);
             } else {
                 // Get information for uplink ready so the line return can be added
                 StringBuilder output = new StringBuilder();
@@ -240,13 +233,12 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
                 if (!output.toString().contentEquals(getText())) {
                     setText(output.toString());
                 }
-                mTrafficVisible = true;
+                setVisibility(VISIBLE);
             }
-            updateVisibility();
 
             // Schedule periodic refresh
             mTrafficHandler.removeMessages(MESSAGE_TYPE_PERIODIC_REFRESH);
-            if (enabled) {
+            if (enabled && mNetworkTrafficIsVisible) {
                 mTrafficHandler.sendEmptyMessageDelayed(MESSAGE_TYPE_PERIODIC_REFRESH,
                         REFRESH_INTERVAL);
             }
@@ -341,7 +333,6 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
     }
 
     private void updateSettings() {
-        updateVisibility();
         ContentResolver resolver = mContext.getContentResolver();
 
         mEnabled = isNotchHidden() ? Settings.System.getIntForUser(resolver,
@@ -437,69 +428,4 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
             mNetworksChanged = true;
         }
     };
-
-    @Override
-    public void onDarkChanged(Rect area, float darkIntensity, int tint) {
-        if (mColorIsStatic) {
-            return;
-        }
-        mIconTint = DarkIconDispatcher.getTint(area, this, tint);
-        setTextColor(mIconTint);
-        updateTrafficDrawableColor();
-    }
-
-    @Override
-    public String getSlot() {
-        return SLOT;
-    }
-
-    @Override
-    public boolean isIconVisible() {
-        return mEnabled && isConnectionAvailable();
-    }
-
-    @Override
-    public int getVisibleState() {
-        return mVisibleState;
-    }
-
-    @Override
-    public void setVisibleState(int state) {
-        if (state == mVisibleState) {
-            return;
-        }
-        mVisibleState = state;
-
-        switch (state) {
-            case STATE_ICON:
-                mSystemIconVisible = true;
-                break;
-            case STATE_DOT:
-            case STATE_HIDDEN:
-            default:
-                mSystemIconVisible = false;
-                break;
-        }
-        updateVisibility();
-    }
-
-    private void updateVisibility() {
-        if (isIconVisible() && mTrafficVisible && mSystemIconVisible && mShouldShow) {
-            setVisibility(View.VISIBLE);
-        } else {
-            setVisibility(View.GONE);
-        }
-    }
-
-    @Override
-    public void setStaticDrawableColor(int color) {
-        mColorIsStatic = true;
-        mIconTint = color;
-        setTextColor(mIconTint);
-        updateTrafficDrawableColor();
-    }
-
-    @Override
-    public void setDecorColor(int color) {
-    }
 }

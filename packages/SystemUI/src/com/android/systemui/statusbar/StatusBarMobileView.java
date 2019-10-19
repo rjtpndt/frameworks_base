@@ -59,7 +59,6 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
     private ImageView mMobile, mMobileType, mMobileRoaming;
     private View mMobileRoamingSpace;
     private int mVisibleState = -1;
-    private ImageView mVolte;
 
     public static StatusBarMobileView fromContext(Context context, String slot) {
         LayoutInflater inflater = LayoutInflater.from(context);
@@ -109,7 +108,6 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mIn = findViewById(R.id.mobile_in);
         mOut = findViewById(R.id.mobile_out);
         mInoutContainer = findViewById(R.id.inout_container);
-        mVolte = findViewById(R.id.mobile_volte);
 
         mMobileDrawable = new SignalDrawable(getContext());
         mMobile.setImageDrawable(mMobileDrawable);
@@ -147,7 +145,7 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
 
     private void initViewState() {
         setContentDescription(mState.contentDescription);
-        if (!mState.visible || !mState.provisioned) {
+        if (!mState.visible) {
             mMobileGroup.setVisibility(View.GONE);
         } else {
             mMobileGroup.setVisibility(View.VISIBLE);
@@ -167,18 +165,13 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mOut.setVisibility(mState.activityIn ? View.VISIBLE : View.GONE);
         mInoutContainer.setVisibility((mState.activityIn || mState.activityOut)
                 ? View.VISIBLE : View.GONE);
-        if (mState.volteId > 0 ) {
-            mVolte.setImageResource(mState.volteId);
-            mVolte.setVisibility(View.VISIBLE);
-        }else {
-            mVolte.setVisibility(View.GONE);
-        }
     }
 
     private void updateState(MobileIconState state) {
         setContentDescription(state.contentDescription);
-        mMobileGroup.setVisibility(state.visible && state.provisioned
-                ? View.VISIBLE : View.GONE);
+        if (mState.visible != state.visible) {
+            mMobileGroup.setVisibility(state.visible ? View.VISIBLE : View.GONE);
+        }
         if (mState.strengthId != state.strengthId) {
             mMobileDrawable.setLevel(state.strengthId);
         }
@@ -199,14 +192,6 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mInoutContainer.setVisibility((state.activityIn || state.activityOut)
                 ? View.VISIBLE : View.GONE);
 
-        if (mState.volteId != state.volteId) {
-            if (state.volteId != 0) {
-                mVolte.setImageResource(state.volteId);
-                mVolte.setVisibility(View.VISIBLE);
-            } else {
-                mVolte.setVisibility(View.GONE);
-            }
-        }
         mState = state;
     }
 
@@ -223,7 +208,6 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mMobileRoaming.setImageTintList(color);
         mDotView.setDecorColor(tint);
         mDotView.setIconColor(tint, false);
-        mVolte.setImageTintList(color);
     }
 
     @Override
@@ -245,7 +229,6 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mOut.setImageTintList(list);
         mMobileType.setImageTintList(list);
         mMobileRoaming.setImageTintList(list);
-        mVolte.setImageTintList(list);
         mDotView.setDecorColor(color);
     }
 
@@ -268,17 +251,13 @@ public class StatusBarMobileView extends FrameLayout implements DarkReceiver,
         mVisibleState = state;
         switch (state) {
             case STATE_ICON:
-                if (mState == null || (mState.visible && mState.provisioned)) {
-                    mMobileGroup.setVisibility(View.VISIBLE);
-                    mDotView.setVisibility(View.GONE);
-                    break;
-                }
+                mMobileGroup.setVisibility(View.VISIBLE);
+                mDotView.setVisibility(View.GONE);
+                break;
             case STATE_DOT:
-                if (mState == null || (mState.visible && mState.provisioned)) {
-                    mMobileGroup.setVisibility(View.INVISIBLE);
-                    mDotView.setVisibility(View.VISIBLE);
-                    break;
-                }
+                mMobileGroup.setVisibility(View.INVISIBLE);
+                mDotView.setVisibility(View.VISIBLE);
+                break;
             case STATE_HIDDEN:
             default:
                 mMobileGroup.setVisibility(View.GONE);

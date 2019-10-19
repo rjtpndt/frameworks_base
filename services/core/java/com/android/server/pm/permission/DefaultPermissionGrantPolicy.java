@@ -80,9 +80,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.android.internal.util.custom.ambient.play.AmbientPlayProvider;
-import com.android.internal.util.custom.weather.WeatherClient;
-
 /**
  * This class is the policy for granting runtime permissions to
  * platform components and default handlers in the system such
@@ -850,18 +847,6 @@ public final class DefaultPermissionGrantPolicy {
                 "com.android.sharedstoragebackup");
         if (sharedStorageBackupPackage != null) {
             grantRuntimePermissions(sharedStorageBackupPackage, STORAGE_PERMISSIONS, true, userId);
-        }
-
-        // Weather client
-        PackageParser.Package weatherClientPackage = getSystemPackage(WeatherClient.SERVICE_PACKAGE);
-        if (weatherClientPackage != null && doesPackageSupportRuntimePermissions(weatherClientPackage)) {
-            grantRuntimePermissions(weatherClientPackage, LOCATION_PERMISSIONS, userId);
-        }
-
-        // Ambient play provider
-        PackageParser.Package ambientPlayPackage = getSystemPackage(AmbientPlayProvider.SERVICE_PACKAGE);
-        if (ambientPlayPackage != null && doesPackageSupportRuntimePermissions(ambientPlayPackage)) {
-            grantRuntimePermissions(ambientPlayPackage, MICROPHONE_PERMISSIONS, userId);
         }
 
         if (mPermissionGrantedCallback != null) {

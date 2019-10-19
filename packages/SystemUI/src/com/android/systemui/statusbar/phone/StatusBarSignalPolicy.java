@@ -107,16 +107,14 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
         if (subId != null) {
             MobileIconState state = getState(subId[0]);
             if (state != null) {
-                state.provisioned = isProvisioned;
-                if (!state.provisioned) {
-                    // This hopefully gets rid of silly leftover padding
-                    // after disabling one of the SIMs.
-                    state.typeId = 0;
+                state.mProvisioned = isProvisioned;
+                if (!isProvisioned) {
+                    state.visible = false;
                 }
-                // Make sure that applyMobileState() gets called
-                mIconController.setMobileIcons(
-                        mSlotMobile, MobileIconState.copyStates(mMobileStates));
             }
+
+            mNetworkController.removeCallback(this);
+            mNetworkController.addCallback(this);
         }
     }
 
@@ -211,7 +209,7 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
 
     @Override
     public void setMobileDataIndicators(IconState statusIcon, IconState qsIcon, int statusType,
-            int qsType, boolean activityIn, boolean activityOut, int volteId, String typeContentDescription,
+            int qsType, boolean activityIn, boolean activityOut, String typeContentDescription,
             String description, boolean isWide, int subId, boolean roaming) {
         MobileIconState state = getState(subId);
         if (state == null) {
@@ -221,7 +219,7 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
         // Visibility of the data type indicator changed
         boolean typeChanged = statusType != state.typeId && (statusType == 0 || state.typeId == 0);
 
-        state.visible = statusIcon.visible && !mBlockMobile;
+        state.visible = statusIcon.visible && !mBlockMobile && state.mProvisioned;
         state.strengthId = statusIcon.icon;
         state.typeId = statusType;
         state.contentDescription = statusIcon.contentDescription;
@@ -229,7 +227,6 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
         state.roaming = roaming;
         state.activityIn = activityIn && mActivityEnabled;
         state.activityOut = activityOut && mActivityEnabled;
-        state.volteId = volteId;
 
         // Always send a copy to maintain value type semantics
         mIconController.setMobileIcons(mSlotMobile, MobileIconState.copyStates(mMobileStates));
@@ -422,18 +419,18 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
         public int typeId;
         public boolean roaming;
         public boolean needsLeadingPadding;
-        public boolean provisioned;
         public String typeContentDescription;
+        private boolean mProvisioned = true;
         public Context context;
         public int volteId;
 
         private MobileIconState(int subId, Context context) {
             super();
             this.subId = subId;
-            this.context = context;
-
             TelephonyExtUtils extTelephony = TelephonyExtUtils.getInstance(context);
-            this.provisioned = !extTelephony.hasService() || extTelephony.isSubProvisioned(subId);
+            if (extTelephony.hasService()) {
+                mProvisioned = extTelephony.isSubProvisioned(subId);
+            }
         }
 
         @Override
@@ -451,8 +448,7 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
                     typeId == that.typeId &&
                     roaming == that.roaming &&
                     needsLeadingPadding == that.needsLeadingPadding &&
-                    Objects.equals(typeContentDescription, that.typeContentDescription) &&
-                    volteId == that.volteId;
+                    Objects.equals(typeContentDescription, that.typeContentDescription);
         }
 
         @Override
@@ -478,7 +474,6 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
             other.roaming = roaming;
             other.needsLeadingPadding = needsLeadingPadding;
             other.typeContentDescription = typeContentDescription;
-            other.volteId = volteId;
         }
 
         private static List<MobileIconState> copyStates(List<MobileIconState> inStates) {
@@ -494,8 +489,7 @@ public class StatusBarSignalPolicy implements NetworkControllerImpl.SignalCallba
 
         @Override public String toString() {
             return "MobileIconState(subId=" + subId + ", strengthId=" + strengthId + ", roaming="
-                    + roaming + ", typeId=" + typeId + ", volteId=" + volteId
-                    + ", visible=" + visible + ")";
+                    + roaming + ", typeId=" + typeId + ", visible=" + visible + ")";
         }
     }
 }
