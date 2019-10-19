@@ -455,8 +455,7 @@ public class NetworkTraffic extends TextView implements StatusIconDisplayable {
 
     @Override
     public boolean isIconVisible() {
-        // return mEnabled && isConnectionAvailable();
-	return mEnabled;
+        return mEnabled && isConnectionAvailable();
     }
 
     @Override
